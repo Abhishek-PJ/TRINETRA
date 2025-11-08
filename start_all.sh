@@ -5,7 +5,7 @@
 
 set -e  # Exit on error
 
-PROJECT_DIR="/home/abhishek/trinetra_demo/suricata-ids-with-ml"
+PROJECT_DIR="/home/abhishek/trinetra_demo/TRINETRA"
 INTERFACE="wlp0s20f3"
 
 echo "=========================================="

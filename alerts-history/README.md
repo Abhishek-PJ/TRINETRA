@@ -77,5 +77,5 @@ Each stored alert contains:
 
 All alert history is stored in:
 ```
-/home/abhishek/trinetra_demo/suricata-ids-with-ml/alerts-history/
+/home/abhishek/trinetra_demo/TRINETRA/alerts-history/
 ```
