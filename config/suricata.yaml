@@ -1196,9 +1196,9 @@ asn1-max-frames: 256
 
 # Datasets default settings
 datasets:
-  blacklist:
-    type: ip
-    state: /etc/suricata/rules/blacklist.txt
+  # blacklist:
+  #   type: ip
+  #   state: /etc/suricata/rules/blacklist.txt
     #- name: blacklist
     # type: ipv4
     # format: netset
@@ -2198,6 +2198,7 @@ default-rule-path: /etc/suricata/rules
 rule-files:
   # - suricata.rules
   - snids.rules
+  - nmap_scan.rules
 ##
 ## Auxiliary configuration files.
 ##

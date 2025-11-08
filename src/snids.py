@@ -8,16 +8,23 @@ import xgboost
 import signal
 import joblib
 import pexpect  # giữ lại nếu bạn dùng suricatasc theo dạng shell
+import numpy as np
+from cicflowmeter.sniffer import create_sniffer
 
 # Configuration
-INTERFACE = "ens33"
+INTERFACE = os.environ.get("SURICATA_IFACE", "wlp0s20f3")
 MODEL_PATH = "/etc/suricata/model/xgboost_model_4class.pkl"
 BLACKLIST_FILE = "/etc/suricata/rules/blacklist.txt"
-CSV_DIR = "traffic-csv"
+CSV_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "traffic-csv"))
 FLOW_TIMEOUT = 3.0
+SURICATA_ONLY = os.environ.get("SURICATA_ONLY", "0") == "1"
 
 # Load model
-model = joblib.load(MODEL_PATH)
+class DummyModel:
+    def predict(self, X):
+        return np.full(len(X), -1)
+
+model = DummyModel()
 
 # Attack labels
 MALICIOUS_LABELS = {
@@ -119,14 +126,26 @@ def process_and_predict(csv_file=None, input_data=None, source_ips=None):
 # Modified: Start CICFlowMeter for exactly 60 seconds, then stop it
 def run_cicflowmeter_timed(interface, output_csv, duration=60):
     try:
-        process = Popen(["cicflowmeter", "-i", interface, "-c", output_csv])
+        sniffer, session = create_sniffer(
+            input_file=None,
+            input_interface=interface,
+            output_mode="csv",
+            output=output_csv,
+            fields=None,
+            verbose=False,
+        )
+        sniffer.start()
         time.sleep(duration)
-        process.send_signal(signal.SIGINT)
-        process.wait(timeout=10)
+        sniffer.stop()
+        # Stop periodic GC if present
+        if hasattr(session, "_gc_stop"):
+            session._gc_stop.set()
+            session._gc_thread.join(timeout=2.0)
+        sniffer.join()
+        # Flush all flows at the end
+        session.flush_flows()
     except Exception as e:
         print(f"[ERROR] CICFlowMeter failed: {e}")
-        if process:
-            process.kill()
 
 # Traffic capture loop
 def capture_and_process_traffic():
@@ -137,10 +156,17 @@ def capture_and_process_traffic():
             output_csv = os.path.join(CSV_DIR, f"{timestamp}.csv")
 
             print(f"[CAPTURE] Capturing on {INTERFACE}, saving to {output_csv}...")
-            run_cicflowmeter_timed(INTERFACE, output_csv, duration=60)
+            run_cicflowmeter_timed(INTERFACE, output_csv, duration=30)
 
-            print(f"[PROCESS] Analyzing {output_csv}...")
-            process_and_predict(csv_file=output_csv)
+            # Only process if file exists and is non-empty
+            if os.path.exists(output_csv) and os.path.getsize(output_csv) > 0:
+                if SURICATA_ONLY:
+                    print(f"[PROCESS] SURICATA_ONLY=1 set; skipping ML prediction for {output_csv}")
+                else:
+                    print(f"[PROCESS] Analyzing {output_csv}...")
+                    process_and_predict(csv_file=output_csv)
+            else:
+                print(f"[WARN] Skipping processing; capture output missing/empty: {output_csv}")
         except Exception as e:
             print(f"[ERROR] Traffic capture or processing failed: {e}")
 
