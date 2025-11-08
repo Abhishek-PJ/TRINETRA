@@ -64,9 +64,7 @@ The system was validated with real attack simulations:
 
 ---
 
-## 👨‍💻 Authors
-- ABHISHEK NALATAWAD (Leader)
-- HARSHA M
- 
+## 👨‍💻 Author & Maintainer
+**ABHISHEK-PJ**
 
-**Information Security, University of Information Technology – VNU-HCM**
+GitHub: [Abhishek-PJ](https://github.com/Abhishek-PJ)

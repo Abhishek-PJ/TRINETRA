@@ -1,7 +1,8 @@
 {
-  "name": "suricata-ids-webui",
+  "name": "trinetra-webui",
   "version": "0.1.0",
   "private": true,
+  "author": "ABHISHEK-PJ",
   "type": "module",
   "scripts": {
     "dev": "vite",
